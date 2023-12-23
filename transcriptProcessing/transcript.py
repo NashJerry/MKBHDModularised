@@ -15,6 +15,21 @@ tokenizer = DistilBertTokenizerFast.from_pretrained(checkpoint)
 model = DistilBertForTokenClassification.from_pretrained(checkpoint)
 encoder_max_length = 256
 
+import re
+
+def remove_text_inside_brackets(text):
+    """
+    Remove text inside brackets (including the brackets themselves) for all types of brackets: [], (), {}.
+
+    :param text: The input string from which the text inside brackets will be removed.
+    :return: A string with the text inside brackets removed.
+    """
+    text = re.sub(r'\[.*?\]', '', text)  # Remove square brackets and their contents
+    text = re.sub(r'\(.*?\)', '', text)  # Remove parentheses and their contents
+    text = re.sub(r'\{.*?\}', '', text)  # Remove curly brackets and their contents
+    return text
+
+
 def extract_plain_text_from_transcript(transcript_list):
     """
     Extract plain text from a list of transcript dictionaries.
@@ -175,8 +190,7 @@ def punctuate_transcripts_in_dataframe(df):
     df['punctuated_transcript'] = df['transcript'].apply(
         lambda x: punctuate_transcript(extract_plain_text_from_transcript(ast.literal_eval(x))) if x and isinstance(x, str) else None
     )
-    df['punctuated_transcript'] = df['punctuated_transcript'].str.replace('[Music]', '', regex=False)
-    df['punctuated_transcript'] = df['punctuated_transcript'].str.replace('Upbeat music', '', regex=False)
+    df['punctuated_transcript'] = df['punctuated_transcript'].apply(remove_text_inside_brackets)
     df['semantically_replaced_transcript'] = df['punctuated_transcript'].apply(lambda x: semantic_replacement(x, semantic_dict) if isinstance(x, str) else x)
     return df
 

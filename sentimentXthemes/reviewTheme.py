@@ -2,6 +2,7 @@ from nltk.tokenize import sent_tokenize
 from transformers import pipeline, DistilBertTokenizer
 from setfit import SetFitModel
 import pandas as pd
+from transcriptProcessing.transcript import remove_text_inside_brackets
 
 def map_int_to_label(value):
     label_dict = {
@@ -76,7 +77,7 @@ def getThemeAndSentiment(transcript):
             emotion = emotion_classifier(combined_text)[0]['label']
         
         results.append({
-            'batch_text': combined_text,
+            'batch_text': remove_text_inside_brackets(combined_text),
             'theme': theme,
             'sentiment': sentiment,
             'emotion': emotion
@@ -92,6 +93,26 @@ def getThemeAndSentiment(transcript):
 
 def extract_sentiment(sentiment_str):
     return int(sentiment_str[0])
+
+def scale_sentiment(number):
+    """
+    Scale sentiment based on the number.
+    - 1 or 2: Negative
+    - 3: Neutral
+    - 4 or 5: Positive
+
+    :param number: An integer representing the sentiment score.
+    :return: A string representing the scaled sentiment.
+    """
+    if number in [1, 2]:
+        return "Negative"
+    elif number == 3:
+        return "Neutral"
+    elif number in [4, 5]:
+        return "Positive"
+    else:
+        return "Invalid"
+
 def flattenPredictions(df):
     # Initialize a list to hold the flattened data
     flat_data = []
@@ -112,6 +133,7 @@ def flattenPredictions(df):
     # Add the batch_counter
     final_df['batch_counter'] = final_df.groupby('videoId').cumcount() + 1 
     final_df['Sentiment Number'] = final_df['sentiment'].apply(extract_sentiment)
+    final_df['Scaled Sentiment'] = final_df['Sentiment Number'].apply(scale_sentiment)
 
     #final_df['Sentiment Number'] = final_df['Sentiment Number'].astype(int)
     return final_df
