@@ -10,6 +10,7 @@ from Visualisations.Visualisations import createStreamLitChart
 def assessLinks(linkOrLinks, Brand=None, Phone=None):
     print("Evidently I am assessing.")
     metadata = videoMetaData(linkOrLinks)
+    #metadata['Brand']
     punctuatedTranscript = punctuate_transcripts_in_dataframe(metadata)
     punctuatedTranscript['semantically_replaced_transcript']  = punctuatedTranscript['semantically_replaced_transcript'].astype(str)
     punctuatedTranscript['predictions'] = punctuatedTranscript['semantically_replaced_transcript'].apply(getThemeAndSentiment)
@@ -89,7 +90,23 @@ if 'chart_to_show' not in st.session_state:
 
 if st.button('Assess Link'):
     # Call your function with the user inputs sd
-    st.session_state['dataframe'] = assessLinks(linkInput, Brand=brandInput, Phone=makeInput)
+    video_info = [
+        {'link': linkInput, 'Brand': brandInput, 'Phone': makeInput}]
+    if linkInput2:  # Add second video info if it exists
+        video_info.append({'link': linkInput2, 'Brand': brandInput2, 'Phone': makeInput2})
+    all_dfs = []
+    import time
+    
+    st.progress(10)
+    with st.spinner('Wait for it...'):    
+            time.sleep(10)
+    
+    for video in video_info:
+        
+        df = assessLinks(video['link'], Brand=video['Brand'], Phone=video['Phone'])
+        all_dfs.append(df)
+    st.session_state['dataframe'] = pd.concat(all_dfs, ignore_index=True)
+    st.balloons()
     print(st.session_state['dataframe'])
     
 col1, col2, col3, col4, col5 = st.columns(5)
